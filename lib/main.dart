@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.red,
         ),
-        home: MyHomePage(title: 'Flutter Demo Home Page'),
+        home: MyHomePage(),
       ),
       providers: [
         ChangeNotifierProvider(create: (context) => ItemModel()),
@@ -31,34 +31,23 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-
-  /*
-  Future<String> _getFutureValue() async {
-    // 擬似的に通信中を表現するために１秒遅らせる
-    await Future.delayed(
-      Duration(seconds: 5),
-    );
-    return Future.value("データの取得に成功しました");
-  }
-  */
+class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var _itemModel = Provider.of<ItemModel>(context);
-    
+    var _itemModel = Provider.of<ItemModel>(context, listen: false);
+
+    Card _generateItemCard(String title) {
+      return Card(
+        child: ListTile(
+          title: Text(title),
+        )
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text('FutureBuilder + Provider + ChangeNotifier'),
         actions: [
           IconButton(
             icon: Icon(Icons.update),
@@ -66,47 +55,50 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Consumer<ItemModel>(
-        builder: (BuildContext context, ItemModel value, Widget child) {
-          return ListView.builder(
-            itemCount: value.items.length,
-            itemBuilder: (context, index) {
-              return Card(
-                child: ListTile(
-                  title: Text(value.items[index].title),
-                ),
-              );
-            },
+      body: FutureBuilder(
+        future: _itemModel.random(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          return Consumer<ItemModel>(
+              builder: (BuildContext context, ItemModel value, Widget child) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  print('Showing CircularProgressIndicator...');
+                  return Center(child: CircularProgressIndicator());
+                } else {
+                  return ListView.builder(
+                    itemCount: value.items.length,
+                    itemBuilder: (context, index) {
+                      return _generateItemCard(value.items[index].title);
+                    },
+                  );
+                }
+              }
           );
         }
       ),
     );
   }
 }
-        // child: Center(
-        //   child: FutureBuilder(
-        //     // future: _getFutureValue(),
-        //     builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-        //       if (snapshot.hasData) {
-        //         return Text(snapshot.data);
-        //       } else {
-        //         // return Text('Waining...');
-        //         return CircularProgressIndicator();
-        //       }
-        //     },
 
 class ItemModel extends ChangeNotifier {
   List<Item> _items = <Item>[];
 
   List<Item> get items => _items;
 
-  void random() {
-    _items = <Item>[];
+  Future<void> random() async {
+    print('random() as been called.');
+
+    await Future.delayed(
+      Duration(seconds: 1),
+    );
+
+    List<Item> _newItems = <Item>[];
     var rng = Random();
-    for (var i = 0; i < 5; i++) {
-      String title = 'item' + rng.nextInt(9).toString();
-      _items.add(Item(title));
+    for (int i = 0; i < 5; i++) {
+      String title = 'item' + rng.nextInt(99).toString();
+      _newItems.add(Item(title));
     }
+
+    _items = _newItems;
     notifyListeners();   // notify changes
   }
 }
