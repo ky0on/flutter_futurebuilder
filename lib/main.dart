@@ -8,6 +8,9 @@ import 'dart:convert';
 // [Flutter] FutureBuilderを使って非同期でWidgetを生成する - Qiita
 // https://qiita.com/ysknsn/items/76c6326c74dc9059ff20
 //
+// 【Flutter】それ、FutureBuilderだったら綺麗に書けるよ？ - Qiita
+// https://qiita.com/ashdik/items/caa4954fa20acb87285c
+//
 
 void main() {
   runApp(MyApp());
@@ -62,19 +65,25 @@ class MyHomePage extends StatelessWidget {
         // future: _itemModel.random(),
         future: _itemModel.fetchItems(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            print('Showing CircularProgressIndicator...');
+            return Center(
+                child: CircularProgressIndicator()
+            );
+          }
+          if (snapshot.error != null) {
+            return Center(
+                child: Text('Error'),
+            );
+          }
           return Consumer<ItemModel>(
               builder: (BuildContext context, ItemModel value, Widget child) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  print('Showing CircularProgressIndicator...');
-                  return Center(child: CircularProgressIndicator());
-                } else {
-                  return ListView.builder(
-                    itemCount: value.items.length,
-                    itemBuilder: (context, index) {
-                      return _generateItemCard(value.items[index].title);
-                    },
-                  );
-                }
+                return ListView.builder(
+                  itemCount: value.items.length,
+                  itemBuilder: (context, index) {
+                    return _generateItemCard(value.items[index].title);
+                  },
+                );
               }
           );
         }
