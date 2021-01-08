@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 //
 // [Flutter] FutureBuilderを使って非同期でWidgetを生成する - Qiita
@@ -51,12 +53,14 @@ class MyHomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.update),
-            onPressed: () => _itemModel.random(),
+            // onPressed: () => _itemModel.random(),
+            onPressed: () => _itemModel.fetchItems(),
           ),
         ],
       ),
       body: FutureBuilder(
-        future: _itemModel.random(),
+        // future: _itemModel.random(),
+        future: _itemModel.fetchItems(),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           return Consumer<ItemModel>(
               builder: (BuildContext context, ItemModel value, Widget child) {
@@ -100,6 +104,24 @@ class ItemModel extends ChangeNotifier {
 
     _items = _newItems;
     notifyListeners();   // notify changes
+  }
+
+  Future<void> fetchItems() async {
+    print('fetchItems() has been called.');
+    const url = 'http://localhost:3000/items';
+    final response = await http.get(url);
+    final decodedData = json.decode(response.body) as List;
+    if (decodedData == null) {
+      return;
+    }
+    List<Item> _newItems = [];
+    for (int i = 0; i < decodedData.length; i++) {
+      Map<String, dynamic> _item = decodedData[i];
+      String title = _item['title'];
+      _newItems.add(Item(title));
+    }
+    _items = _newItems;
+    notifyListeners();
   }
 }
 
